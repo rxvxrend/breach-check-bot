@@ -4,40 +4,68 @@ from aiogram.fsm.context import FSMContext
 
 from states.check_states import CheckStates
 
-from services.checkers.password_checker import PasswordChecker
+from services.registry import get_checker
 
 router = Router()
 
-password_checker = PasswordChecker()
 
 @router.message(lambda message: message.text == "🔑 Пароль")
 async def password_selected(message: Message, state: FSMContext):
-    await state.set_state(CheckStates.waiting_for_password)
+
+    await state.update_data(check_type="password")
+
+    await state.set_state(CheckStates.waiting_for_input)
 
     await message.answer(
         "🔑 Введите пароль для проверки:"
     )
 
-@router.message(CheckStates.waiting_for_password)
-async def process_password(message: Message, state: FSMContext):
-    password = message.text
+@router.message(lambda message: message.text == "📧 Email")
+async def email_selected(message: Message, state: FSMContext):
 
-    result = password_checker.check(password)
+    await state.update_data(check_type="email")
+
+    await state.set_state(CheckStates.waiting_for_input)
+
+    await message.answer(
+        "📧 Введите email для проверки:"
+    )
+
+@router.message(CheckStates.waiting_for_input)
+async def process_input(message: Message, state: FSMContext):
+    
+    value = message.text
+
+    data = await state.get_data()
+
+    check_type = data.get("check_type")
+
+    checker = get_checker(check_type)
+
+    if not checker:
+        await message.answer(
+            "❌ Неизвестный тип проверки."
+        )
+        await state.clear()
+        return
+    
+    result = checker.check(value)
 
     if not result["success"]:
         await message.answer(
             "❌ Ошибка при проверке."
         )
+        await state.clear()
         return
 
     if result["found"]:
         responce = (
-            f"⚠️ Пароль найден в утечках!\n"
+            f"⚠️ Найдено в утечках!\n"
             f"Количество: {result['count']}\n"
             f"Риск: {result['risk']}"
         )
     else:
-        responce = "✅ Пароль не найден в утечках."
+        responce = "✅ Не найдено в утечках."
 
     await message.answer(responce)
 

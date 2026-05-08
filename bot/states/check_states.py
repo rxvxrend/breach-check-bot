@@ -1,4 +1,4 @@
 from aiogram.fsm.state import State, StatesGroup
 
 class CheckStates(StatesGroup):
-    waiting_for_password = State()
+    waiting_for_input = State()
