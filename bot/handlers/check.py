@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from states.check_states import CheckStates
 
 from services.registry import get_checker
+from services.formatters.breach_formatter import format_breach_result
 
 router = Router()
 
@@ -29,6 +30,17 @@ async def email_selected(message: Message, state: FSMContext):
 
     await message.answer(
         "📧 Введите email для проверки:"
+    )
+
+@router.message(lambda message: message.text == "👤 Username")
+async def email_selected(message: Message, state: FSMContext):
+
+    await state.update_data(check_type="username")
+
+    await state.set_state(CheckStates.waiting_for_input)
+
+    await message.answer(
+        "👤 Введите username для проверки:"
     )
 
 @router.message(CheckStates.waiting_for_input)
@@ -59,11 +71,8 @@ async def process_input(message: Message, state: FSMContext):
         return
 
     if result["found"]:
-        responce = (
-            f"⚠️ Найдено в утечках!\n"
-            f"Количество: {result['count']}\n"
-            f"Риск: {result['risk']}"
-        )
+        responce = format_breach_result(result)
+        
     else:
         responce = "✅ Не найдено в утечках."
 

@@ -46,19 +46,26 @@ class PasswordChecker(BaseChecker):
             }
         
         count = int(hashes.get(suffix, 0))
+        reasons = []
 
         if count > 100_000:
-            risk = "critical"
+            risk_level = "critical"
+            reasons.append("пароль чрезвычайно распространен в утечках")
         elif count > 500:
-            risk = "high"
+            risk_level = "high"
+            reasons.append("пароль часто встречается в утечках")
         elif count > 0:
-            risk = "medium"
+            risk_level = "medium"
+            reasons.append("пароль был найден в утечках")
         else:
-            risk = "safe"
+            risk_level = "safe"
 
         return {
             "success": True,
             "found": count > 0,
             "count": count,
-            "risk": risk
+            "risk": {
+                "level": risk_level,
+                "reasons": reasons
+            }
         }

@@ -3,29 +3,32 @@ import requests
 from services.checkers.base import BaseChecker
 
 
-class EmailChecker(BaseChecker):
+class UsernameChecker(BaseChecker):
 
     BASE_URL = "https://leakcheck.io/api/public"
 
-    def fetch_data(self, email):
+    def fetch_data(self, username):
 
         try:
             responce = requests.get(
                 self.BASE_URL,
                 params={
-                    "check": email
+                    "check": username
                 },
-                timeout=5
+                timeout=10
             )
 
             return responce
         
         except requests.RequestException:
-            return None
+            return {
+                "success": False,
+                "message": "Ошибка запроса к API"
+            }
 
-    def check(self, email):
+    def check(self, username):
 
-        responce = self.fetch_data(email)
+        responce = self.fetch_data(username)
 
         if responce is None:
             return {

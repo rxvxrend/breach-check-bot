@@ -6,7 +6,7 @@ def get_main_menu():
     builder.button(text="🔑 Пароль")
     builder.button(text="📧 Email")
     builder.button(text="👤 Username")
-    builder.button(text="🌐 Домен")
+    builder.button(text="🚧 В разработке")
 
     builder.adjust(2)
 
