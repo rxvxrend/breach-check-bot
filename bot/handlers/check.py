@@ -5,7 +5,9 @@ from aiogram.fsm.context import FSMContext
 from states.check_states import CheckStates
 
 from services.registry import get_checker
+from services.storage import db
 from services.formatters.breach_formatter import format_breach_result
+from keyboards.monitoring_keyboards import get_monitoring_keyboard
 
 router = Router()
 
@@ -76,6 +78,15 @@ async def process_input(message: Message, state: FSMContext):
     else:
         responce = "✅ Не найдено в утечках."
 
-    await message.answer(responce)
+    await message.answer(
+        responce,
+        reply_markup=get_monitoring_keyboard(
+            db,
+            message.from_user.id,
+            check_type,
+            value,
+            result["count"]
+        )
+    )
 
     await state.clear()
