@@ -1,7 +1,9 @@
 import hashlib
-import requests
+import aiohttp
 
 from services.checkers.base import BaseChecker
+from services.logger import logger
+from services.http_client import http_client
 
 
 class PasswordChecker(BaseChecker):
@@ -13,31 +15,39 @@ class PasswordChecker(BaseChecker):
             password.encode()
         ).hexdigest().upper()
     
-    def get_pwned_data(self, prefix):
+    async def get_pwned_data(self, prefix):
         try:
-            responce = requests.get(
-                f"{self.API_URL}{prefix}",
-                timeout=5
+            responce = await http_client.get(
+                f"{self.API_URL}{prefix}"
             )
+                    
+            if responce is None:
+                return None
 
-            if responce.status_code == 200:
+            if responce["status"] == 200:
+                text = responce["text"]
+
                 return dict(
                     line.split(":")
-                    for line in responce.text.splitlines()
+                    for line in text.splitlines()
                 )
-            
-        except requests.RequestException:
+                    
+            logger.error(
+                f"HIBP bad status: {responce["status"]}"
+            )
             return None
-        
-        return None
+            
+        except Exception as e:
+            logger.error(f"HIBP request failed: {e}")
+            return None
     
-    def check(self, password):
+    async def check(self, password):
         hashed_password = self.hash_password(password)
 
         prefix = hashed_password[:5]
         suffix = hashed_password[5:]
 
-        hashes = self.get_pwned_data(prefix)
+        hashes = await self.get_pwned_data(prefix)
 
         if hashes is None:
             return {

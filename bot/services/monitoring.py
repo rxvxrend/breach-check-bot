@@ -2,12 +2,18 @@ import asyncio
 from services.storage import db
 
 from services.registry import CHECKERS
+from services.logger import logger
 
 
 async def monitoring_loop(bot):
-    
+
+    logger.info("Monitoring loop started")
     while True:
+        
         subscriptions = db.get_subscriptions()
+        logger.info(
+            f"Checking {len(subscriptions)} subscriptions"
+        )
 
         for subscription in subscriptions:
             try:
@@ -22,13 +28,22 @@ async def monitoring_loop(bot):
 
                 checker = CHECKERS[check_type]
                 
-                result = checker.check(value)
+                logger.info(
+                    f"Checking {check_type}: {value}"
+                )
+
+                result = await checker.check(value)
                 if not result["success"]:
                     continue
 
                 new_count = result["count"]
 
                 if new_count > last_count:
+
+                    logger.warning(
+                        f"New breaches found for {value}: "
+                        f"{last_count} -> {new_count}"
+                    )
 
                     await bot.send_message(
                         user_id,
@@ -43,6 +58,8 @@ async def monitoring_loop(bot):
                     )
 
             except Exception as e:
-                print(f"Monitoring error: {e}")
+                logger.exception(
+                    f"Monitoring error for {value}: {e}"
+                )
         
         await asyncio.sleep(3600)

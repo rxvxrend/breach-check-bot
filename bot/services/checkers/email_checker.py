@@ -1,31 +1,34 @@
-import requests
+import aiohttp
 
 from services.checkers.base import BaseChecker
+from services.logger import logger
+from services.http_client import http_client
 
 
 class EmailChecker(BaseChecker):
 
     BASE_URL = "https://leakcheck.io/api/public"
 
-    def fetch_data(self, email):
+    async def fetch_data(self, email):
 
         try:
-            responce = requests.get(
+            responce = await http_client.get_json(
                 self.BASE_URL,
-                params={
-                    "check": email
-                },
-                timeout=5
+                params={"check": email}
             )
 
+            if responce is None:
+                return None
+            
             return responce
         
-        except requests.RequestException:
+        except aiohttp.ClientError as e:
+            logger.error(f"LeakCheck request failed: {e}")
             return None
 
-    def check(self, email):
+    async def check(self, email):
 
-        responce = self.fetch_data(email)
+        responce = await self.fetch_data(email)
 
         if responce is None:
             return {
@@ -34,13 +37,13 @@ class EmailChecker(BaseChecker):
             }
         
         # ошибка api
-        if responce.status_code != 200:
+        if responce["status"] != 200:
             return {
                 "success": False,
-                "message": f"API error: {responce.status_code}"
+                "message": f"API error: {responce["status"]}"
             }
         
-        data = responce.json()
+        data = responce["data"]
 
         # нет утечек (не ошибка)
         if data.get("success") is False:

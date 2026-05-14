@@ -7,6 +7,7 @@ from states.check_states import CheckStates
 from services.registry import get_checker
 from services.storage import db
 from services.formatters.breach_formatter import format_breach_result
+from services.logger import logger
 from keyboards.monitoring_keyboards import get_monitoring_keyboard
 
 router = Router()
@@ -63,7 +64,12 @@ async def process_input(message: Message, state: FSMContext):
         await state.clear()
         return
     
-    result = checker.check(value)
+    logger.info(
+        f"User {message.from_user.id} "
+        f"checking {check_type}: {value}"
+    )
+
+    result = await checker.check(value)
 
     if not result["success"]:
         await message.answer(

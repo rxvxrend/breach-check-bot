@@ -2,6 +2,7 @@ from aiogram import Router
 from aiogram.types import CallbackQuery
 
 from services.storage import db
+from services.logger import logger
 
 router = Router()
 
@@ -20,6 +21,11 @@ async def monitoring_actions(callback: CallbackQuery):
             value=value
         )
 
+        logger.info(
+            f"User {callback.from_user.id} "
+            f"unsubscribed from {check_type}: {value}"
+        )
+
         await callback.message.answer("❌ Удалено из мониторинга")
         await callback.answer("Удалено")
 
@@ -31,6 +37,11 @@ async def monitoring_actions(callback: CallbackQuery):
             check_type=check_type,
             value=value,
             last_count=int(count)
+        )
+
+        logger.info(
+            f"User {callback.from_user.id} "
+            f"subscribed to {check_type}: {value}"
         )
     
         await callback.message.answer(
